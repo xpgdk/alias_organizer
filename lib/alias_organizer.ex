@@ -28,8 +28,6 @@ defmodule AliasOrganizer do
   @alias_without_two_newlines_pattern ~R/(alias.*[^{]\n)((?![ ]*(?:alias|\n) .*).*)/
 
   defp insert_newline_between_alias_and_other_content(content) do
-    Regex.scan(@alias_without_two_newlines_pattern, content)
-    |> IO.inspect
     Regex.replace(@alias_without_two_newlines_pattern, content, "\\1\n\\2")
   end
 

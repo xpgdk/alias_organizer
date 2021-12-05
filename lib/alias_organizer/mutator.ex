@@ -87,7 +87,6 @@ defmodule AliasOrganizer.Mutator do
         {_prefix, []} -> true
         _ -> false
       end)
-      |> IO.inspect(label: "Grouped aliases")
       |> Enum.sort_by(fn
         {prefix, _postfixes} ->
           Alias.alias_to_string(prefix)
@@ -117,7 +116,6 @@ defmodule AliasOrganizer.Mutator do
           end
 
         alias_path ->
-          IO.inspect(alias_path, label: "Single alias")
           {:alias, [], [{:__aliases__, [], alias_path}]}
       end)
 
