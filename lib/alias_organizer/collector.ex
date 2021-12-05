@@ -35,13 +35,20 @@ defmodule AliasOrganizer.Collector do
       {:use, _, _}, acc ->
         acc
 
+      {:import, _, _}, acc ->
+        acc
+
       body, acc ->
         {_, acc} =
           Sourceror.prewalk(body, acc, fn
             {:__aliases__, _meta, path} = quoted, state ->
               resolved_alias = Alias.resolve(aliased_modules, path)
 
-              {quoted, %{state | acc: [resolved_alias | state.acc]}}
+              # if Alias.global_module?(resolved_alias) do
+                {quoted, %{state | acc: [resolved_alias | state.acc]}}
+              # else
+              #   {quoted, state}
+              # end
 
             quoted, state ->
               {quoted, state}
@@ -51,5 +58,6 @@ defmodule AliasOrganizer.Collector do
     end)
     |> Enum.uniq()
   end
+
   def collect_used_aliases([{{:__block__, _meta, _args}, _expr}], _aliased_modules), do: []
 end
