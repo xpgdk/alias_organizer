@@ -25,4 +25,22 @@ defmodule AliasOrganizer.Alias do
       alias_path
     end
   end
+
+  def global_module?(module_path) when is_list(module_path) do
+    try do
+      Module.concat(module_path).__info__(:module)
+      true
+    rescue
+      _ -> false
+    end
+  end
+
+  def global_module?(module) when is_atom(module) do
+    try do
+      Module.concat([module]).__info__(:module)
+      true
+    rescue
+      _ -> false
+    end
+  end
 end
