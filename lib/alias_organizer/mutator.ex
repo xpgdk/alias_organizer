@@ -54,11 +54,11 @@ defmodule AliasOrganizer.Mutator do
             {:__aliases__, meta, path}, state ->
               resolved_alias_path = Alias.resolve(aliased_modules, path)
 
-              if state.acc == false do
-                {{:__aliases__, meta, resolved_alias_path}, state}
-              else
+              if Alias.global_module?(resolved_alias_path) do
                 short_alias = Map.get(short_version_map, resolved_alias_path, resolved_alias_path)
                 {{:__aliases__, meta, short_alias}, state}
+              else
+                {{:__aliases__, meta, path}, state}
               end
 
             quoted, state ->
@@ -83,6 +83,11 @@ defmodule AliasOrganizer.Mutator do
       |> Enum.map(fn {long, short} -> Enum.take(long, 1 + length(long) - length(short)) end)
       |> Enum.reject(fn path -> Enum.count(path) == 1 end)
       |> group_aliases_with_common_prefix()
+      |> Enum.reject(fn
+        {_prefix, []} -> true
+        _ -> false
+      end)
+      |> IO.inspect(label: "Grouped aliases")
       |> Enum.sort_by(fn
         {prefix, _postfixes} ->
           Alias.alias_to_string(prefix)
@@ -112,12 +117,13 @@ defmodule AliasOrganizer.Mutator do
           end
 
         alias_path ->
+          IO.inspect(alias_path, label: "Single alias")
           {:alias, [], [{:__aliases__, [], alias_path}]}
       end)
 
     alias_split_index =
       Enum.find_index(block_content, fn
-        {:@, _meta, _args} -> false
+        {:@, _meta, [{:moduledoc, _, _}]} -> false
         {:use, _meta, _args} -> false
         {:require, _meta, _args} -> false
         {:import, _meta, _args} -> false
@@ -144,6 +150,7 @@ defmodule AliasOrganizer.Mutator do
         included_paths =
           alias_list
           |> Enum.filter(&List.starts_with?(&1, prefix))
+          |> Enum.uniq()
 
         {prefix, included_paths}
       end)
@@ -170,6 +177,23 @@ defmodule AliasOrganizer.Mutator do
         end)
       end)
 
+    # If a prefix contains itself, remove it from itself, and add it explicitly.
+    # I.e.
+    # alias A.B
+    # alias A.B.{One,Two}
+    # A.B is both used as a prefix, but also used directly as an alias, so it needs
+    # a dedicated entry
+    prefixes =
+      Enum.reduce(prefixes, [], fn {prefix, paths} = entry, acc ->
+
+        if prefix in paths do
+          new_entry = {prefix, Enum.reject(paths, &(&1 == prefix))}
+          [new_entry | acc]
+        else
+          [entry | acc]
+        end
+      end)
+
     aliases_part_of_prefixes =
       alias_list
       |> Enum.filter(fn alias_path ->
@@ -180,5 +204,6 @@ defmodule AliasOrganizer.Mutator do
 
     (alias_list
      |> Enum.reject(&(&1 in aliases_part_of_prefixes))) ++ prefixes
+     |> Enum.uniq()
   end
 end
