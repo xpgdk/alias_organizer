@@ -38,29 +38,9 @@ defmodule AliasOrganizer.Shortener do
     # Any short alias, which starts with an atom that is used by any long
     # aliases is problematic
 
-    Enum.reject(short_version_map, fn {long_lookup, [first | _]} ->
-      local_overlap? =
-        if Enum.find(short_version_map, fn {long, _short} ->
-             long_lookup != long and first in long
-           end) == nil do
-          false
-        else
-          true
-        end
-
-      global_overlap? = global_module?(first)
-
-      local_overlap? or global_overlap?
+    Enum.reject(short_version_map, fn {_long_lookup, [first | _] = _short} ->
+      Alias.global_module?(first)
     end)
     |> Map.new()
-  end
-
-  defp global_module?(module) do
-    try do
-      Module.concat([module]).__info__(:module)
-      true
-    rescue
-      _ -> false
-    end
   end
 end
