@@ -38,17 +38,18 @@ defmodule AliasOrganizer.Collector do
       {:import, _, _}, acc ->
         acc
 
+      {:require, _, _}, acc ->
+        acc
+
+      {:@, _meta, [{:behaviour, _, _}]}, acc ->
+        acc
+
       body, acc ->
         {_, acc} =
           Sourceror.prewalk(body, acc, fn
             {:__aliases__, _meta, path} = quoted, state ->
               resolved_alias = Alias.resolve(aliased_modules, path)
-
-              # if Alias.global_module?(resolved_alias) do
-                {quoted, %{state | acc: [resolved_alias | state.acc]}}
-              # else
-              #   {quoted, state}
-              # end
+              {quoted, %{state | acc: [resolved_alias | state.acc]}}
 
             quoted, state ->
               {quoted, state}
