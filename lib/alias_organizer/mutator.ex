@@ -41,6 +41,9 @@ defmodule AliasOrganizer.Mutator do
         {:@, _meta, [{:moduledoc, _, _}]} = block ->
           block
 
+        {:@, _meta, [{:behaviour, _, _}]} = block ->
+          always_expand_aliases(block, aliased_modules)
+
         {:use, _, _} = block ->
           always_expand_aliases(block, aliased_modules)
 
@@ -126,6 +129,7 @@ defmodule AliasOrganizer.Mutator do
     alias_split_index =
       Enum.find_index(block_content, fn
         {:@, _meta, [{:moduledoc, _, _}]} -> false
+        {:@, _meta, [{:behaviour, _, _}]} -> false
         {:use, _meta, _args} -> false
         {:require, _meta, _args} -> false
         {:import, _meta, _args} -> false
