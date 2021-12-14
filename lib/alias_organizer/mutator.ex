@@ -19,6 +19,18 @@ defmodule AliasOrganizer.Mutator do
     [{{:__block__, meta, args}, block_content}]
   end
 
+  defp always_expand_aliases(block, aliased_modules) do
+    Sourceror.prewalk(block, fn
+      {:__aliases__, meta, path}, state ->
+        resolved_alias_path = Alias.resolve(aliased_modules, path)
+
+        {{:__aliases__, meta, resolved_alias_path}, state}
+
+      quoted, state ->
+        {quoted, state}
+    end)
+  end
+
   def replace_aliases(
         [{do_expr, {:__block__, meta, block_content}}],
         short_version_map,
@@ -30,21 +42,13 @@ defmodule AliasOrganizer.Mutator do
           block
 
         {:use, _, _} = block ->
-          Sourceror.prewalk(block, fn
-            {:__aliases__, meta, path}, state ->
-              resolved_alias_path = Alias.resolve(aliased_modules, path)
-
-              {{:__aliases__, meta, resolved_alias_path}, state}
-
-            quoted, state ->
-              {quoted, state}
-          end)
+          always_expand_aliases(block, aliased_modules)
 
         {:require, _, _} = block ->
-          block
+          always_expand_aliases(block, aliased_modules)
 
         {:import, _, _} = block ->
-          block
+          always_expand_aliases(block, aliased_modules)
 
         {:defmodule, _, _} = block ->
           block
