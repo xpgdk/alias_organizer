@@ -38,9 +38,12 @@ defmodule AliasOrganizer.Shortener do
     # Any short alias, which starts with an atom that is used by any long
     # aliases is problematic
 
-    Enum.reject(short_version_map, fn {_long_lookup, [first | _] = _short} ->
-      Alias.global_module?(first)
-    end)
-    |> Map.new()
+    # IO.inspect short_version_map, label: "Short version map"
+
+    # Enum.reject(short_version_map, fn {_long_lookup, [first | _] = _short} ->
+    #   Alias.global_module?(first)
+    # end)
+    # |> Map.new()
+    short_version_map
   end
 end

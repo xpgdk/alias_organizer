@@ -61,12 +61,12 @@ defmodule AliasOrganizer.Mutator do
             {:__aliases__, meta, path}, state ->
               resolved_alias_path = Alias.resolve(aliased_modules, path)
 
-              if Alias.global_module?(resolved_alias_path) do
+              # if Alias.global_module?(resolved_alias_path) do
                 short_alias = Map.get(short_version_map, resolved_alias_path, resolved_alias_path)
                 {{:__aliases__, meta, short_alias}, state}
-              else
-                {{:__aliases__, meta, path}, state}
-              end
+              # else
+              #   {{:__aliases__, meta, path}, state}
+              # end
 
             quoted, state ->
               {quoted, state}
