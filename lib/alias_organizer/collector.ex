@@ -47,6 +47,9 @@ defmodule AliasOrganizer.Collector do
       body, acc ->
         {_, acc} =
           Sourceror.prewalk(body, acc, fn
+            {:__aliases__, _meta, [{:__MODULE__, _, _} | _]} = quoted, state ->
+              {quoted, state}
+
             {:__aliases__, _meta, path} = quoted, state ->
               resolved_alias = Alias.resolve(aliased_modules, path)
               {quoted, %{state | acc: [resolved_alias | state.acc]}}
