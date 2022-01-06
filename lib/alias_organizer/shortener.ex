@@ -15,7 +15,7 @@ defmodule AliasOrganizer.Shortener do
       Map.put(short_aliases, short_alias, alias_path)
     end)
     |> Map.new(fn {short, long} -> {long, short} end)
-    |> remove_problematic_short_aliases()
+    |> remove_problematic_short_aliases(aliases)
   end
 
   defp find_shortest_available_alias_path(short_aliases, alias_path) do
@@ -34,16 +34,13 @@ defmodule AliasOrganizer.Shortener do
     end
   end
 
-  defp remove_problematic_short_aliases(short_version_map) do
+  defp remove_problematic_short_aliases(short_version_map, used_aliases) do
     # Any short alias, which starts with an atom that is used by any long
     # aliases is problematic
 
-    # IO.inspect short_version_map, label: "Short version map"
-
-    # Enum.reject(short_version_map, fn {_long_lookup, [first | _] = _short} ->
-    #   Alias.global_module?(first)
-    # end)
-    # |> Map.new()
-    short_version_map
+    Enum.reject(short_version_map, fn {_long_lookup, [first | _] = _short} ->
+      [first] in used_aliases
+    end)
+    |> Map.new()
   end
 end
