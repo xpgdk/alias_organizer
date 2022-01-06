@@ -38,6 +38,7 @@ defmodule AliasOrganizer.Alias do
   def global_module?(module) when is_atom(module) do
     try do
       Module.concat([module]).__info__(:module)
+      IO.inspect module, label: "Is global module"
       true
     rescue
       _ -> false
