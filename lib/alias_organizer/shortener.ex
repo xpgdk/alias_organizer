@@ -6,32 +6,56 @@ defmodule AliasOrganizer.Shortener do
   @spec determine_short_versions(Alias.registry()) :: t()
   def determine_short_versions(aliases) do
     aliases
-    |> Enum.sort()
-    |> Enum.uniq()
-    |> Enum.reject(&(Enum.count(&1) < 2))
-    |> Enum.reduce(%{}, fn alias_path, short_aliases ->
-      short_alias = find_shortest_available_alias_path(short_aliases, alias_path)
-
-      Map.put(short_aliases, short_alias, alias_path)
-    end)
-    |> Map.new(fn {short, long} -> {long, short} end)
+    |> construct_initial_short_versions()
+    |> include_additional_steps_for_conflicting_short_aliases()
     |> remove_problematic_short_aliases(aliases)
   end
 
-  defp find_shortest_available_alias_path(short_aliases, alias_path) do
-    reversed_path =
-      alias_path
-      |> Enum.reverse()
-
-    baf(short_aliases, [hd(reversed_path)], tl(reversed_path))
+  @spec construct_initial_short_versions(Alias.registry()) :: t()
+  defp construct_initial_short_versions(aliases) do
+    aliases
+    |> Enum.sort()
+    |> Enum.uniq()
+    |> Enum.reject(&(Enum.count(&1) < 2))
+    |> Map.new(fn alias_path ->
+      {alias_path, [List.last(alias_path)]}
+    end)
   end
 
-  defp baf(short_aliases, rev_candidate, rev_tail) do
-    if not Map.has_key?(short_aliases, Enum.reverse(rev_candidate)) do
-      Enum.reverse(rev_candidate)
+  @spec include_additional_steps_for_conflicting_short_aliases(t()) :: t()
+  defp include_additional_steps_for_conflicting_short_aliases(short_aliases) do
+    short_alises_with_one_level_of_conflicts_resolved =
+      find_and_resolve_conflicting_short_aliases(short_aliases)
+
+    if short_aliases == short_alises_with_one_level_of_conflicts_resolved do
+      short_alises_with_one_level_of_conflicts_resolved
     else
-      baf(short_aliases, rev_candidate ++ [hd(rev_tail)], tl(rev_tail))
+      include_additional_steps_for_conflicting_short_aliases(
+        short_alises_with_one_level_of_conflicts_resolved
+      )
     end
+  end
+
+  @spec find_and_resolve_conflicting_short_aliases(t()) :: t()
+  defp find_and_resolve_conflicting_short_aliases(short_aliases) do
+    short_aliases
+    |> Map.new(fn {full_alias, short_alias} ->
+      short_alias_values =
+        short_aliases
+        |> Map.delete(full_alias)
+        |> Map.values()
+
+      if short_alias in short_alias_values do
+        new_short_alias =
+          full_alias
+          |> Enum.reverse()
+          |> Enum.take(Enum.count(short_alias) + 1)
+
+        {full_alias, Enum.reverse(new_short_alias)}
+      else
+        {full_alias, short_alias}
+      end
+    end)
   end
 
   defp remove_problematic_short_aliases(short_version_map, used_aliases) do
